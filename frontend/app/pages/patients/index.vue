@@ -2,102 +2,49 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold">Patients</h2>
-      <UButton @click="isModalOpen = true" icon="i-heroicons-plus">Add Patient</UButton>
     </div>
     
     <UCard>
-      <div class="mb-4">
-        <UInput
-          v-model="searchQuery"
-          icon="i-heroicons-magnifying-glass"
-          placeholder="Search patients..."
-          @input="debouncedSearch"
-        />
-      </div>
-      
-      <div v-if="pending" class="flex justify-center py-8">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+      <div v-if="loading" class="flex justify-center py-8">
+        <div class="text-gray-500">Loading patients...</div>
       </div>
       
       <div v-else-if="error" class="text-red-600 py-4">
         Error loading patients: {{ error }}
       </div>
       
-      <UTable
-        v-else
-        :rows="patients"
-        :columns="columns"
-        @select="viewPatient"
-      >
-        <template #actions-data="{ row }">
-          <UButton
-            variant="ghost"
-            icon="i-heroicons-eye"
-            @click="viewPatient(row)"
-          />
-        </template>
-      </UTable>
-    </UCard>
-    
-    <!-- Add Patient Modal -->
-    <UModal v-model="isModalOpen">
-      <UCard>
-        <template #header>
-          <h3 class="text-xl font-bold">Add New Patient</h3>
-        </template>
-        
-        <form @submit.prevent="addPatient" class="space-y-4">
-          <UFormGroup label="First Name" required>
-            <UInput v-model="newPatient.first_name" required />
-          </UFormGroup>
-          
-          <UFormGroup label="Last Name" required>
-            <UInput v-model="newPatient.last_name" required />
-          </UFormGroup>
-          
-          <UFormGroup label="Date of Birth" required>
-            <UInput v-model="newPatient.date_of_birth" type="date" required />
-          </UFormGroup>
-          
-          <UFormGroup label="Gender" required>
-            <USelect
-              v-model="newPatient.gender"
-              :options="[
-                { label: 'Male', value: 'M' },
-                { label: 'Female', value: 'F' },
-                { label: 'Other', value: 'O' }
-              ]"
-              required
-            />
-          </UFormGroup>
-          
-          <UFormGroup label="Phone Number">
-            <UInput v-model="newPatient.phone_number" />
-          </UFormGroup>
-          
-          <UFormGroup label="Email">
-            <UInput v-model="newPatient.email" type="email" />
-          </UFormGroup>
-          
-          <UFormGroup label="Address">
-            <UTextarea v-model="newPatient.address" />
-          </UFormGroup>
-          
-          <UFormGroup label="Blood Type">
-            <UInput v-model="newPatient.blood_type" placeholder="e.g., A+" />
-          </UFormGroup>
-          
-          <UFormGroup label="Allergies">
-            <UTextarea v-model="newPatient.allergies" placeholder="Known allergies" />
-          </UFormGroup>
-          
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" @click="isModalOpen = false">Cancel</UButton>
-            <UButton type="submit" :loading="submitting">Add Patient</UButton>
+      <div v-else>
+        <div v-if="patients.length === 0" class="text-center py-8 text-gray-500">
+          No patients found
+        </div>
+        <div v-else class="space-y-4">
+          <div
+            v-for="patient in patients"
+            :key="patient.id"
+            class="border-b last:border-b-0 pb-4 cursor-pointer hover:bg-gray-50 p-4"
+            @click="$router.push(`/patients/${patient.id}`)"
+          >
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="font-semibold text-lg">{{ patient.first_name }} {{ patient.last_name }}</span>
+                  <UBadge :color="patient.gender === 'M' ? 'blue' : patient.gender === 'F' ? 'pink' : 'gray'">
+                    {{ patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : 'Other' }}
+                  </UBadge>
+                </div>
+                <p class="text-sm text-gray-600">DOB: {{ patient.date_of_birth }} ({{ patient.age }} years old)</p>
+                <p v-if="patient.phone_number" class="text-sm text-gray-600">Phone: {{ patient.phone_number }}</p>
+                <p v-if="patient.blood_type" class="text-sm text-gray-600">Blood Type: {{ patient.blood_type }}</p>
+              </div>
+              <UButton
+                variant="ghost"
+                icon="i-heroicons-chevron-right"
+              />
+            </div>
           </div>
-        </form>
-      </UCard>
-    </UModal>
+        </div>
+      </div>
+    </UCard>
   </div>
 </template>
 
@@ -108,77 +55,22 @@ definePageMeta({
   title: 'Patients'
 })
 
-const api = useApi()
+const config = useRuntimeConfig()
 const router = useRouter()
 
-// State
-const searchQuery = ref('')
-const isModalOpen = ref(false)
-const submitting = ref(false)
+const patients = ref<Patient[]>([])
+const loading = ref(true)
+const error = ref('')
 
-// Fetch patients
-const { data: patients, pending, error, refresh } = await useLazyAsyncData<Patient[]>(
-  'patients',
-  () => api.patients.list({ search: searchQuery.value }),
-  { default: () => [] }
-)
-
-// Table columns
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'first_name', label: 'First Name' },
-  { key: 'last_name', label: 'Last Name' },
-  { key: 'date_of_birth', label: 'Date of Birth' },
-  { key: 'age', label: 'Age' },
-  { key: 'gender', label: 'Gender' },
-  { key: 'phone_number', label: 'Phone' },
-  { key: 'actions', label: 'Actions' }
-]
-
-// New patient form
-const newPatient = ref({
-  first_name: '',
-  last_name: '',
-  date_of_birth: '',
-  gender: 'M',
-  phone_number: '',
-  email: '',
-  address: '',
-  blood_type: '',
-  allergies: ''
-})
-
-// Debounced search
-const debouncedSearch = useDebounceFn(() => {
-  refresh()
-}, 500)
-
-// Methods
-const viewPatient = (patient: Patient) => {
-  router.push(`/patients/${patient.id}`)
-}
-
-const addPatient = async () => {
-  submitting.value = true
+onMounted(async () => {
   try {
-    await api.patients.create(newPatient.value)
-    isModalOpen.value = false
-    newPatient.value = {
-      first_name: '',
-      last_name: '',
-      date_of_birth: '',
-      gender: 'M',
-      phone_number: '',
-      email: '',
-      address: '',
-      blood_type: '',
-      allergies: ''
-    }
-    refresh()
-  } catch (err) {
-    console.error('Error adding patient:', err)
+    const response = await $fetch<any>(`${config.public.apiBase}/patients/`)
+    patients.value = response.results || response
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load patients'
+    console.error('Error loading patients:', err)
   } finally {
-    submitting.value = false
+    loading.value = false
   }
-}
+})
 </script>

@@ -10,8 +10,8 @@
       </UButton>
     </div>
     
-    <div v-if="pending" class="flex justify-center py-8">
-      <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+    <div v-if="loading" class="flex justify-center py-8">
+      <div class="text-gray-500">Loading patient...</div>
     </div>
     
     <div v-else-if="error" class="text-red-600 py-4">
@@ -76,7 +76,6 @@
         <template #header>
           <div class="flex justify-between items-center">
             <h3 class="text-xl font-bold">Encounters</h3>
-            <UButton @click="createEncounter" icon="i-heroicons-plus">New Encounter</UButton>
           </div>
         </template>
         
@@ -129,15 +128,24 @@ import type { Patient } from '~/types/ehr'
 
 const route = useRoute()
 const router = useRouter()
-const api = useApi()
+const config = useRuntimeConfig()
 
 const patientId = parseInt(route.params.id as string)
 
-// Fetch patient details
-const { data: patient, pending, error } = await useAsyncData<Patient>(
-  `patient-${patientId}`,
-  () => api.patients.get(patientId)
-)
+const patient = ref<Patient | null>(null)
+const loading = ref(true)
+const error = ref('')
+
+onMounted(async () => {
+  try {
+    patient.value = await $fetch<Patient>(`${config.public.apiBase}/patients/${patientId}/`)
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load patient'
+    console.error('Error loading patient:', err)
+  } finally {
+    loading.value = false
+  }
+})
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {
@@ -163,9 +171,5 @@ const getStatusColor = (status: string) => {
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString()
-}
-
-const createEncounter = () => {
-  router.push(`/encounters/new?patient=${patientId}`)
 }
 </script>

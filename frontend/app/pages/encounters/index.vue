@@ -2,14 +2,11 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold">Encounters</h2>
-      <UButton @click="$router.push('/encounters/new')" icon="i-heroicons-plus">
-        New Encounter
-      </UButton>
     </div>
     
     <UCard>
-      <div v-if="pending" class="flex justify-center py-8">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+      <div v-if="loading" class="flex justify-center py-8">
+        <div class="text-gray-500">Loading encounters...</div>
       </div>
       
       <div v-else-if="error" class="text-red-600 py-4">
@@ -20,7 +17,7 @@
         <div
           v-for="encounter in encounters"
           :key="encounter.id"
-          class="border-b last:border-b-0 py-4 cursor-pointer hover:bg-gray-50"
+          class="border-b last:border-b-0 py-4 cursor-pointer hover:bg-gray-50 p-4"
           @click="$router.push(`/encounters/${encounter.id}`)"
         >
           <div class="flex justify-between items-start">
@@ -64,14 +61,23 @@ definePageMeta({
   title: 'Encounters'
 })
 
-const api = useApi()
+const config = useRuntimeConfig()
 
-// Fetch encounters
-const { data: encounters, pending, error } = await useAsyncData<Encounter[]>(
-  'encounters',
-  () => api.encounters.list(),
-  { default: () => [] }
-)
+const encounters = ref<Encounter[]>([])
+const loading = ref(true)
+const error = ref('')
+
+onMounted(async () => {
+  try {
+    const response = await $fetch<any>(`${config.public.apiBase}/encounters/`)
+    encounters.value = response.results || response
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load encounters'
+    console.error('Error loading encounters:', err)
+  } finally {
+    loading.value = false
+  }
+})
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {

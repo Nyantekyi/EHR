@@ -10,8 +10,8 @@
       </UButton>
     </div>
     
-    <div v-if="pending" class="flex justify-center py-8">
-      <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+    <div v-if="loading" class="flex justify-center py-8">
+      <div class="text-gray-500">Loading encounter...</div>
     </div>
     
     <div v-else-if="error" class="text-red-600 py-4">
@@ -229,15 +229,24 @@
 import type { Encounter } from '~/types/ehr'
 
 const route = useRoute()
-const api = useApi()
+const config = useRuntimeConfig()
 
 const encounterId = parseInt(route.params.id as string)
 
-// Fetch encounter details
-const { data: encounter, pending, error } = await useAsyncData<Encounter>(
-  `encounter-${encounterId}`,
-  () => api.encounters.get(encounterId)
-)
+const encounter = ref<Encounter | null>(null)
+const loading = ref(true)
+const error = ref('')
+
+onMounted(async () => {
+  try {
+    encounter.value = await $fetch<Encounter>(`${config.public.apiBase}/encounters/${encounterId}/`)
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load encounter'
+    console.error('Error loading encounter:', err)
+  } finally {
+    loading.value = false
+  }
+})
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {
