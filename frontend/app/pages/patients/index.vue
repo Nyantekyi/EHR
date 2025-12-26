@@ -73,7 +73,7 @@
                   'bg-gray-500': patient.gender === 'O'
                 }"
               >
-                {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                {{ (patient.first_name?.[0] || '') + (patient.last_name?.[0] || '') || '?' }}
               </div>
             </div>
             

@@ -36,7 +36,7 @@
               'bg-gradient-to-br from-gray-500 to-gray-600': patient.gender === 'O'
             }"
           >
-            {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+            {{ (patient.first_name?.[0] || '') + (patient.last_name?.[0] || '') || '?' }}
           </div>
           
           <!-- Patient Info -->
@@ -264,86 +264,3 @@ const formatDate = (dateString: string) => {
 }
 </script>
 
-        
-        <div v-if="patient.recent_encounters && patient.recent_encounters.length > 0">
-          <div
-            v-for="encounter in patient.recent_encounters"
-            :key="encounter.id"
-            class="border-b last:border-b-0 py-4"
-          >
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="flex items-center gap-2">
-                  <UBadge :color="getEncounterTypeColor(encounter.encounter_type)">
-                    {{ encounter.encounter_type }}
-                  </UBadge>
-                  <UBadge :color="getStatusColor(encounter.status)">
-                    {{ encounter.status }}
-                  </UBadge>
-                </div>
-                <p class="mt-2 text-sm text-gray-600">
-                  {{ formatDate(encounter.encounter_date) }}
-                </p>
-                <p v-if="encounter.location" class="text-sm text-gray-600">
-                  Location: {{ encounter.location }}
-                </p>
-                <p v-if="encounter.provider_name" class="text-sm text-gray-600">
-                  Provider: {{ encounter.provider_name }}
-                </p>
-              </div>
-              <UButton
-                variant="ghost"
-                icon="i-heroicons-eye"
-                @click="$router.push(`/encounters/${encounter.id}`)"
-              >
-                View
-              </UButton>
-            </div>
-          </div>
-        </div>
-        <div v-else class="text-center py-8 text-gray-500">
-          No encounters recorded yet
-        </div>
-      </UCard>
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-import type { Patient } from '~/types/ehr'
-
-const route = useRoute()
-const config = useRuntimeConfig()
-
-const patientId = parseInt(route.params.id as string)
-
-const { data: patient, pending: loading, error } = await useFetch<Patient>(
-  `${config.public.apiBase}/patients/${patientId}/`
-)
-
-// Helper functions
-const getEncounterTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    OUTPATIENT: 'blue',
-    INPATIENT: 'purple',
-    EMERGENCY: 'red',
-    CLINIC: 'green',
-    PHARMACY: 'orange'
-  }
-  return colors[type] || 'gray'
-}
-
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    SCHEDULED: 'yellow',
-    IN_PROGRESS: 'blue',
-    COMPLETED: 'green',
-    CANCELLED: 'red'
-  }
-  return colors[status] || 'gray'
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString()
-}
-</script>
