@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Encounter } from '~/types/ehr'
+import type { Encounter, PaginatedResponse } from '~/types/ehr'
 
 definePageMeta({
   title: 'Encounters'
@@ -63,9 +63,9 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 
-const { data, pending: loading, error } = await useFetch<any>(`${config.public.apiBase}/encounters/`)
+const { data, pending: loading, error } = await useFetch<PaginatedResponse<Encounter>>(`${config.public.apiBase}/encounters/`)
 
-const encounters = computed(() => data.value?.results || data.value || [])
+const encounters = computed(() => data.value?.results || [])
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {

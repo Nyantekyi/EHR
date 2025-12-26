@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Patient } from '~/types/ehr'
+import type { Patient, PaginatedResponse } from '~/types/ehr'
 
 definePageMeta({
   title: 'Patients'
@@ -57,7 +57,7 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 
-const { data, pending: loading, error } = await useFetch<any>(`${config.public.apiBase}/patients/`)
+const { data, pending: loading, error } = await useFetch<PaginatedResponse<Patient>>(`${config.public.apiBase}/patients/`)
 
-const patients = computed(() => data.value?.results || data.value || [])
+const patients = computed(() => data.value?.results || [])
 </script>
