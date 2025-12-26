@@ -233,20 +233,9 @@ const config = useRuntimeConfig()
 
 const encounterId = parseInt(route.params.id as string)
 
-const encounter = ref<Encounter | null>(null)
-const loading = ref(true)
-const error = ref('')
-
-onMounted(async () => {
-  try {
-    encounter.value = await $fetch<Encounter>(`${config.public.apiBase}/encounters/${encounterId}/`)
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load encounter'
-    console.error('Error loading encounter:', err)
-  } finally {
-    loading.value = false
-  }
-})
+const { data: encounter, pending: loading, error } = await useFetch<Encounter>(
+  `${config.public.apiBase}/encounters/${encounterId}/`
+)
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {

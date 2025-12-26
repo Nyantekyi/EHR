@@ -63,21 +63,9 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 
-const encounters = ref<Encounter[]>([])
-const loading = ref(true)
-const error = ref('')
+const { data, pending: loading, error } = await useFetch<any>(`${config.public.apiBase}/encounters/`)
 
-onMounted(async () => {
-  try {
-    const response = await $fetch<any>(`${config.public.apiBase}/encounters/`)
-    encounters.value = response.results || response
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load encounters'
-    console.error('Error loading encounters:', err)
-  } finally {
-    loading.value = false
-  }
-})
+const encounters = computed(() => data.value?.results || data.value || [])
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {

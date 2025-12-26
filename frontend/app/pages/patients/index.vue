@@ -56,21 +56,8 @@ definePageMeta({
 })
 
 const config = useRuntimeConfig()
-const router = useRouter()
 
-const patients = ref<Patient[]>([])
-const loading = ref(true)
-const error = ref('')
+const { data, pending: loading, error } = await useFetch<any>(`${config.public.apiBase}/patients/`)
 
-onMounted(async () => {
-  try {
-    const response = await $fetch<any>(`${config.public.apiBase}/patients/`)
-    patients.value = response.results || response
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load patients'
-    console.error('Error loading patients:', err)
-  } finally {
-    loading.value = false
-  }
-})
+const patients = computed(() => data.value?.results || data.value || [])
 </script>

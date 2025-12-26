@@ -127,25 +127,13 @@
 import type { Patient } from '~/types/ehr'
 
 const route = useRoute()
-const router = useRouter()
 const config = useRuntimeConfig()
 
 const patientId = parseInt(route.params.id as string)
 
-const patient = ref<Patient | null>(null)
-const loading = ref(true)
-const error = ref('')
-
-onMounted(async () => {
-  try {
-    patient.value = await $fetch<Patient>(`${config.public.apiBase}/patients/${patientId}/`)
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load patient'
-    console.error('Error loading patient:', err)
-  } finally {
-    loading.value = false
-  }
-})
+const { data: patient, pending: loading, error } = await useFetch<Patient>(
+  `${config.public.apiBase}/patients/${patientId}/`
+)
 
 // Helper functions
 const getEncounterTypeColor = (type: string) => {
