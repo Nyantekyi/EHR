@@ -1,0 +1,101 @@
+<template>
+  <div>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Encounters</h2>
+      <UButton @click="$router.push('/encounters/new')" icon="i-heroicons-plus">
+        New Encounter
+      </UButton>
+    </div>
+    
+    <UCard>
+      <div v-if="pending" class="flex justify-center py-8">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+      </div>
+      
+      <div v-else-if="error" class="text-red-600 py-4">
+        Error loading encounters: {{ error }}
+      </div>
+      
+      <div v-else>
+        <div
+          v-for="encounter in encounters"
+          :key="encounter.id"
+          class="border-b last:border-b-0 py-4 cursor-pointer hover:bg-gray-50"
+          @click="$router.push(`/encounters/${encounter.id}`)"
+        >
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-semibold">{{ encounter.patient_name }}</span>
+                <UBadge :color="getEncounterTypeColor(encounter.encounter_type)">
+                  {{ encounter.encounter_type }}
+                </UBadge>
+                <UBadge :color="getStatusColor(encounter.status)">
+                  {{ encounter.status }}
+                </UBadge>
+              </div>
+              <p class="text-sm text-gray-600">{{ formatDate(encounter.encounter_date) }}</p>
+              <p v-if="encounter.location" class="text-sm text-gray-600">
+                Location: {{ encounter.location }}
+              </p>
+              <p v-if="encounter.provider_name" class="text-sm text-gray-600">
+                Provider: {{ encounter.provider_name }}
+              </p>
+            </div>
+            <UButton
+              variant="ghost"
+              icon="i-heroicons-chevron-right"
+            />
+          </div>
+        </div>
+        
+        <div v-if="encounters.length === 0" class="text-center py-8 text-gray-500">
+          No encounters found
+        </div>
+      </div>
+    </UCard>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { Encounter } from '~/types/ehr'
+
+definePageMeta({
+  title: 'Encounters'
+})
+
+const api = useApi()
+
+// Fetch encounters
+const { data: encounters, pending, error } = await useAsyncData<Encounter[]>(
+  'encounters',
+  () => api.encounters.list(),
+  { default: () => [] }
+)
+
+// Helper functions
+const getEncounterTypeColor = (type: string) => {
+  const colors: Record<string, string> = {
+    OUTPATIENT: 'blue',
+    INPATIENT: 'purple',
+    EMERGENCY: 'red',
+    CLINIC: 'green',
+    PHARMACY: 'orange'
+  }
+  return colors[type] || 'gray'
+}
+
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    SCHEDULED: 'yellow',
+    IN_PROGRESS: 'blue',
+    COMPLETED: 'green',
+    CANCELLED: 'red'
+  }
+  return colors[status] || 'gray'
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleString()
+}
+</script>
